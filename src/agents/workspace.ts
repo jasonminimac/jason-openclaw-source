@@ -31,6 +31,15 @@ export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
+
+// MIND system constants
+export const MIND_PROFILE_FILENAME = "MIND/PROFILE.md";
+export const MIND_PROJECTS_FILENAME = "MIND/PROJECTS.md";
+export const MIND_LOGS_DIRNAME = "MIND/logs";
+export const MIND_DECISIONS_DIRNAME = "MIND/decisions";
+export const MIND_ERRORS_DIRNAME = "MIND/errors";
+export const MIND_ARCHIVE_DIRNAME = "MIND/archive";
+
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;

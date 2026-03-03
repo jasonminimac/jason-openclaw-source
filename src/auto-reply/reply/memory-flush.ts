@@ -12,7 +12,7 @@ export const DEFAULT_MEMORY_FLUSH_FORCE_TRANSCRIPT_BYTES = 2 * 1024 * 1024;
 
 export const DEFAULT_MEMORY_FLUSH_PROMPT = [
   "Pre-compaction memory flush.",
-  "Store durable memories now (use memory/YYYY-MM-DD.md; create memory/ if needed).",
+  "Store durable memories now (use MIND/logs/[CURRENT-MONTH]/YYYY-MM-DD.md).",
   "IMPORTANT: If the file already exists, APPEND new content only and do not overwrite existing entries.",
   `If nothing to store, reply with ${SILENT_REPLY_TOKEN}.`,
 ].join(" ");
