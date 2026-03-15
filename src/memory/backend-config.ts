@@ -285,6 +285,12 @@ function resolveDefaultCollections(
     { path: workspaceDir, pattern: "MEMORY.md", base: "memory-root" },
     { path: workspaceDir, pattern: "memory.md", base: "memory-alt" },
     { path: path.join(workspaceDir, "memory"), pattern: "**/*.md", base: "memory-dir" },
+    // MIND system integration
+    { path: workspaceDir, pattern: "MIND/PROFILE.md", base: "mind-profile" },
+    { path: workspaceDir, pattern: "MIND/PROJECTS.md", base: "mind-projects" },
+    { path: path.join(workspaceDir, "MIND", "logs"), pattern: "**/*.md", base: "mind-logs" },
+    { path: path.join(workspaceDir, "MIND", "decisions"), pattern: "**/*.md", base: "mind-decisions" },
+    { path: path.join(workspaceDir, "MIND", "errors"), pattern: "**/*.md", base: "mind-errors" },
   ];
   return entries.map((entry) => ({
     name: ensureUniqueName(scopeCollectionBase(entry.base, agentId), existing),
