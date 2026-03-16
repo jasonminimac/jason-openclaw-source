@@ -5,6 +5,7 @@ import { DEFAULT_PI_COMPACTION_RESERVE_TOKENS_FLOOR } from "../../agents/pi-sett
 import { parseNonNegativeByteSize } from "../../config/byte-size.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { resolveFreshSessionTotalTokens, type SessionEntry } from "../../config/sessions.js";
+import type { AgentCompactionMemoryFlushConfig } from "../../config/types.agent-defaults.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 
 export const DEFAULT_MEMORY_FLUSH_SOFT_TOKENS = 4000;
@@ -110,22 +111,55 @@ const normalizeNonNegativeInt = (value: unknown): number | null => {
   return int >= 0 ? int : null;
 };
 
-export function resolveMemoryFlushSettings(cfg?: OpenClawConfig): MemoryFlushSettings | null {
+/**
+ * Resolve the memory flush config for a specific agent, falling back to
+ * global defaults. The per-agent override is read from
+ * `agents.list[agentId].compaction.memoryFlush` when `agentId` is supplied.
+ */
+function resolveAgentMemoryFlushOverride(
+  cfg: OpenClawConfig | undefined,
+  agentId: string | undefined,
+): AgentCompactionMemoryFlushConfig | undefined {
+  if (!agentId || !cfg?.agents?.list) {
+    return undefined;
+  }
+  const entry = cfg.agents.list.find((a) => a.id.toLowerCase() === agentId.toLowerCase());
+  return (
+    entry as
+      | (typeof entry & { compaction?: { memoryFlush?: AgentCompactionMemoryFlushConfig } })
+      | undefined
+  )?.compaction?.memoryFlush;
+}
+
+export function resolveMemoryFlushSettings(
+  cfg?: OpenClawConfig,
+  agentId?: string,
+): MemoryFlushSettings | null {
   const defaults = cfg?.agents?.defaults?.compaction?.memoryFlush;
-  const enabled = defaults?.enabled ?? true;
+  const agentOverride = resolveAgentMemoryFlushOverride(cfg, agentId);
+
+  // enabled: agent override wins, then global default, then true
+  const enabled = agentOverride?.enabled ?? defaults?.enabled ?? true;
   if (!enabled) {
     return null;
   }
+
   const softThresholdTokens =
-    normalizeNonNegativeInt(defaults?.softThresholdTokens) ?? DEFAULT_MEMORY_FLUSH_SOFT_TOKENS;
+    normalizeNonNegativeInt(agentOverride?.softThresholdTokens ?? defaults?.softThresholdTokens) ??
+    DEFAULT_MEMORY_FLUSH_SOFT_TOKENS;
   const forceFlushTranscriptBytes =
-    parseNonNegativeByteSize(defaults?.forceFlushTranscriptBytes) ??
-    DEFAULT_MEMORY_FLUSH_FORCE_TRANSCRIPT_BYTES;
+    parseNonNegativeByteSize(
+      agentOverride?.forceFlushTranscriptBytes ?? defaults?.forceFlushTranscriptBytes,
+    ) ?? DEFAULT_MEMORY_FLUSH_FORCE_TRANSCRIPT_BYTES;
+
+  // prompt: agent override wins over global default
   const prompt = ensureMemoryFlushSafetyHints(
-    defaults?.prompt?.trim() || DEFAULT_MEMORY_FLUSH_PROMPT,
+    agentOverride?.prompt?.trim() || defaults?.prompt?.trim() || DEFAULT_MEMORY_FLUSH_PROMPT,
   );
   const systemPrompt = ensureMemoryFlushSafetyHints(
-    defaults?.systemPrompt?.trim() || DEFAULT_MEMORY_FLUSH_SYSTEM_PROMPT,
+    agentOverride?.systemPrompt?.trim() ||
+      defaults?.systemPrompt?.trim() ||
+      DEFAULT_MEMORY_FLUSH_SYSTEM_PROMPT,
   );
   const reserveTokensFloor =
     normalizeNonNegativeInt(cfg?.agents?.defaults?.compaction?.reserveTokensFloor) ??

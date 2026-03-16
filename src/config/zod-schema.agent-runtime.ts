@@ -769,6 +769,25 @@ export const AgentEntrySchema = z
       })
       .strict()
       .optional(),
+    /** Per-agent compaction overrides. Only memoryFlush prompt customisation is supported here;
+     *  full compaction tuning lives in agents.defaults.compaction. */
+    compaction: z
+      .object({
+        memoryFlush: z
+          .object({
+            enabled: z.boolean().optional(),
+            softThresholdTokens: z.number().int().nonnegative().optional(),
+            forceFlushTranscriptBytes: z
+              .union([z.number().int().nonnegative(), z.string()])
+              .optional(),
+            prompt: z.string().optional(),
+            systemPrompt: z.string().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
     sandbox: AgentSandboxSchema,
     params: z.record(z.string(), z.unknown()).optional(),
     tools: AgentToolsSchema,
