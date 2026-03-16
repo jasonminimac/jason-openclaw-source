@@ -537,6 +537,8 @@ const DOCKS: Record<ChatChannelId, ChannelDock> = {
       resolveToolPolicy: resolveIMessageGroupToolPolicy,
     },
     threading: {
+      resolveReplyToMode: () => "off",
+      allowExplicitReplyTagsWhenOff: false,
       buildToolContext: ({ context, hasRepliedRef }) =>
         buildIMessageThreadToolContext({ context, hasRepliedRef }),
     },
