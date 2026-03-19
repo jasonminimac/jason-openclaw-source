@@ -57,6 +57,22 @@ function formatDateStampInTimezone(nowMs: number, timezone: string): string {
   return new Date(nowMs).toISOString().slice(0, 10);
 }
 
+function formatMonthStampInTimezone(nowMs: number, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "short",
+  }).formatToParts(new Date(nowMs));
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  if (year && month) {
+    return `${month}-${year}`;
+  }
+  const d = new Date(nowMs);
+  const shortMonth = d.toLocaleString("en-US", { month: "short" });
+  return `${shortMonth}-${d.getUTCFullYear()}`;
+}
+
 export function resolveMemoryFlushRelativePathForRun(params: {
   cfg?: OpenClawConfig;
   nowMs?: number;
@@ -64,7 +80,8 @@ export function resolveMemoryFlushRelativePathForRun(params: {
   const nowMs = Number.isFinite(params.nowMs) ? (params.nowMs as number) : Date.now();
   const { userTimezone } = resolveCronStyleNow(params.cfg ?? {}, nowMs);
   const dateStamp = formatDateStampInTimezone(nowMs, userTimezone);
-  return `memory/${dateStamp}.md`;
+  const monthStamp = formatMonthStampInTimezone(nowMs, userTimezone);
+  return `MIND/logs/${monthStamp}/${dateStamp}.md`;
 }
 
 export function resolveMemoryFlushPromptForRun(params: {
@@ -74,13 +91,13 @@ export function resolveMemoryFlushPromptForRun(params: {
 }): string {
   const nowMs = Number.isFinite(params.nowMs) ? (params.nowMs as number) : Date.now();
   const { timeLine } = resolveCronStyleNow(params.cfg ?? {}, nowMs);
-  const dateStamp = resolveMemoryFlushRelativePathForRun({
-    cfg: params.cfg,
-    nowMs,
-  })
-    .replace(/^memory\//, "")
-    .replace(/\.md$/, "");
-  const withDate = params.prompt.replaceAll("YYYY-MM-DD", dateStamp).trimEnd();
+  const { userTimezone } = resolveCronStyleNow(params.cfg ?? {}, nowMs);
+  const dateStamp = formatDateStampInTimezone(nowMs, userTimezone);
+  const monthStamp = formatMonthStampInTimezone(nowMs, userTimezone);
+  const withDate = params.prompt
+    .replaceAll("YYYY-MM-DD", dateStamp)
+    .replaceAll("[CURRENT-MONTH]", monthStamp)
+    .trimEnd();
   if (!withDate) {
     return timeLine;
   }

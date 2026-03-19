@@ -73,10 +73,15 @@ function isEvergreenMemoryPath(filePath: string): boolean {
   if (normalized === "MEMORY.md" || normalized === "memory.md") {
     return true;
   }
-  if (!normalized.startsWith("memory/")) {
-    return false;
+  // Legacy memory/ directory: non-dated files are evergreen
+  if (normalized.startsWith("memory/")) {
+    return !DATED_MEMORY_PATH_RE.test(normalized);
   }
-  return !DATED_MEMORY_PATH_RE.test(normalized);
+  // MIND system: only logs are dated; profile/projects/decisions/errors are evergreen
+  if (normalized.startsWith("MIND/")) {
+    return !normalized.startsWith("MIND/logs/");
+  }
+  return false;
 }
 
 async function extractTimestamp(params: {
