@@ -143,6 +143,14 @@ export async function listMemoryFiles(
       await walkDir(memoryDir, result);
     }
   } catch {}
+  // MIND system: walk MIND/ directory alongside legacy memory/
+  const mindDir = path.join(workspaceDir, "MIND");
+  try {
+    const mindStat = await fs.lstat(mindDir);
+    if (!mindStat.isSymbolicLink() && mindStat.isDirectory()) {
+      await walkDir(mindDir, result, multimodal);
+    }
+  } catch {}
 
   const normalizedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
   if (normalizedExtraPaths.length > 0) {
