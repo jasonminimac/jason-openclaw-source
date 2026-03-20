@@ -76,12 +76,18 @@ function formatMonthStampInTimezone(nowMs: number, timezone: string): string {
 export function resolveMemoryFlushRelativePathForRun(params: {
   cfg?: OpenClawConfig;
   nowMs?: number;
+  pathPrefix?: string;
 }): string {
   const nowMs = Number.isFinite(params.nowMs) ? (params.nowMs as number) : Date.now();
   const { userTimezone } = resolveCronStyleNow(params.cfg ?? {}, nowMs);
   const dateStamp = formatDateStampInTimezone(nowMs, userTimezone);
   const monthStamp = formatMonthStampInTimezone(nowMs, userTimezone);
-  return `MIND/logs/${monthStamp}/${dateStamp}.md`;
+  const relativePath = `MIND/logs/${monthStamp}/${dateStamp}.md`;
+  if (params.pathPrefix) {
+    const prefix = params.pathPrefix.replace(/\/+$/, "");
+    return `${prefix}/${relativePath}`;
+  }
+  return relativePath;
 }
 
 export function resolveMemoryFlushPromptForRun(params: {
@@ -118,6 +124,8 @@ export type MemoryFlushSettings = {
   prompt: string;
   systemPrompt: string;
   reserveTokensFloor: number;
+  /** Optional path prefix prepended to MIND/logs/[month]/[date].md for agents on shared workspaces. */
+  pathPrefix?: string;
 };
 
 const normalizeNonNegativeInt = (value: unknown): number | null => {
@@ -189,6 +197,7 @@ export function resolveMemoryFlushSettings(
     prompt: ensureNoReplyHint(prompt),
     systemPrompt: ensureNoReplyHint(systemPrompt),
     reserveTokensFloor,
+    pathPrefix: agentOverride?.pathPrefix?.trim() || defaults?.pathPrefix?.trim(),
   };
 }
 

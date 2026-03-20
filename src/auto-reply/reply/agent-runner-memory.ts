@@ -470,6 +470,7 @@ export async function runMemoryFlushIfNeeded(params: {
   const memoryFlushWritePath = resolveMemoryFlushRelativePathForRun({
     cfg: params.cfg,
     nowMs: memoryFlushNowMs,
+    pathPrefix: memoryFlushSettings.pathPrefix,
   });
   const flushSystemPrompt = [
     params.followupRun.run.extraSystemPrompt,

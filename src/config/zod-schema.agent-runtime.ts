@@ -782,6 +782,7 @@ export const AgentEntrySchema = z
               .optional(),
             prompt: z.string().optional(),
             systemPrompt: z.string().optional(),
+            pathPrefix: z.string().optional(),
           })
           .strict()
           .optional(),

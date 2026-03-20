@@ -356,4 +356,10 @@ export type AgentCompactionMemoryFlushConfig = {
   prompt?: string;
   /** System prompt appended for the memory flush turn. */
   systemPrompt?: string;
+  /**
+   * Path prefix prepended to the resolved MIND/logs/[month]/[date].md path.
+   * Use for agents whose workspace is shared and need a per-agent subdirectory,
+   * e.g. "agents/ceo" → "agents/ceo/MIND/logs/Mar-2026/2026-03-20.md".
+   */
+  pathPrefix?: string;
 };
