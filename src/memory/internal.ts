@@ -79,7 +79,21 @@ export function isMemoryPath(relPath: string): boolean {
   if (normalized === "MEMORY.md" || normalized === "memory.md") {
     return true;
   }
-  return normalized.startsWith("memory/") || normalized.startsWith("MIND/");
+  if (normalized.startsWith("memory/") || normalized.startsWith("MIND/")) {
+    return true;
+  }
+  // Floor agents: agents/[role]/MIND/ or agents/[role]/memory/
+  if (normalized.startsWith("agents/")) {
+    const rest = normalized.slice("agents/".length);
+    const slashIdx = rest.indexOf("/");
+    if (slashIdx !== -1) {
+      const afterRole = rest.slice(slashIdx + 1);
+      if (afterRole.startsWith("MIND/") || afterRole.startsWith("memory/")) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function isAllowedMemoryFilePath(filePath: string, multimodal?: MemoryMultimodalSettings): boolean {
@@ -149,6 +163,29 @@ export async function listMemoryFiles(
     const mindStat = await fs.lstat(mindDir);
     if (!mindStat.isSymbolicLink() && mindStat.isDirectory()) {
       await walkDir(mindDir, result, multimodal);
+    }
+  } catch {}
+  // Floor agents: walk agents/[role]/MIND/ and agents/[role]/memory/ subdirectories
+  const agentsDir = path.join(workspaceDir, "agents");
+  try {
+    const agentsDirStat = await fs.lstat(agentsDir);
+    if (!agentsDirStat.isSymbolicLink() && agentsDirStat.isDirectory()) {
+      const roleEntries = await fs.readdir(agentsDir, { withFileTypes: true });
+      for (const roleEntry of roleEntries) {
+        if (roleEntry.isSymbolicLink() || !roleEntry.isDirectory()) {
+          continue;
+        }
+        const roleDir = path.join(agentsDir, roleEntry.name);
+        for (const subDir of ["MIND", "memory"]) {
+          const agentMemDir = path.join(roleDir, subDir);
+          try {
+            const s = await fs.lstat(agentMemDir);
+            if (!s.isSymbolicLink() && s.isDirectory()) {
+              await walkDir(agentMemDir, result, multimodal);
+            }
+          } catch {}
+        }
+      }
     }
   } catch {}
 

@@ -77,9 +77,23 @@ function isEvergreenMemoryPath(filePath: string): boolean {
   if (normalized.startsWith("memory/")) {
     return !DATED_MEMORY_PATH_RE.test(normalized);
   }
-  // MIND system: only logs are dated; profile/projects/decisions/errors are evergreen
+  // MIND system at workspace root: only logs are dated
   if (normalized.startsWith("MIND/")) {
     return !normalized.startsWith("MIND/logs/");
+  }
+  // Floor agents: agents/[role]/MIND/ or agents/[role]/memory/
+  if (normalized.startsWith("agents/")) {
+    const rest = normalized.slice("agents/".length);
+    const slashIdx = rest.indexOf("/");
+    if (slashIdx !== -1) {
+      const afterRole = rest.slice(slashIdx + 1);
+      if (afterRole.startsWith("MIND/")) {
+        return !afterRole.startsWith("MIND/logs/");
+      }
+      if (afterRole.startsWith("memory/")) {
+        return !DATED_MEMORY_PATH_RE.test(afterRole);
+      }
+    }
   }
   return false;
 }
