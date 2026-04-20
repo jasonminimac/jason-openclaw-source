@@ -1562,9 +1562,11 @@ final class TalkModeManager: NSObject {
             latencyTier: TalkTTSValidation.validatedLatencyTier(context.directive?.latencyTier))
     }
 
-    /// Returns `mp3_44100_128` when the API has already rejected PCM, otherwise `pcm_44100`.
+    /// Always returns `mp3_44100_128` to avoid AVAudioEngine PCM resampling distortion.
+    /// PCM (pcm_44100) caused audible distortion on iOS even after the Safari resampling fix;
+    /// MP3 bypasses the PCMStreamingAudioPlayer path entirely and plays cleanly via StreamingAudioPlayer.
     private var effectiveDefaultOutputFormat: String {
-        self.pcmFormatUnavailable ? "mp3_44100_128" : "pcm_44100"
+        "mp3_44100_128"
     }
 
     private static func monitorStreamFailures(
