@@ -288,6 +288,18 @@ final class TalkModeManager: NSObject {
         self.stopSpeaking()
     }
 
+    /// Sends a typed text message through the same chat pipeline as voice transcripts.
+    /// Interrupts any active speech, then processes the message and resumes listening when done.
+    func sendTextMessage(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        self.stopSpeaking()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.processTranscript(trimmed, restartAfter: self.isEnabled)
+        }
+    }
+
     func beginPushToTalk() async throws -> OpenClawTalkPTTStartPayload {
         guard self.gatewayConnected else {
             self.statusText = "Offline"

@@ -3,6 +3,8 @@ import SwiftUI
 struct TalkOrbOverlay: View {
     @Environment(NodeAppModel.self) private var appModel
     @State private var pulse: Bool = false
+    @State private var textInput: String = ""
+    @FocusState private var textFieldFocused: Bool
 
     var body: some View {
         let seam = self.appModel.seamColor
@@ -76,6 +78,38 @@ struct TalkOrbOverlay: View {
                     .animation(.easeOut(duration: 0.12), value: mic)
                     .accessibilityLabel("Microphone level")
             }
+
+            // Text input bar — lets users type instead of (or alongside) speaking
+            HStack(spacing: 10) {
+                TextField("Type a message…", text: self.$textInput, axis: .vertical)
+                    .lineLimit(1...4)
+                    .font(.system(.body, design: .rounded))
+                    .foregroundStyle(Color.white)
+                    .tint(seam)
+                    .focused(self.$textFieldFocused)
+                    .onSubmit { self.submitText() }
+                    .submitLabel(.send)
+
+                Button(action: self.submitText) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(
+                            self.textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? Color.white.opacity(0.25)
+                                : seam)
+                }
+                .disabled(self.textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Send message")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.black.opacity(0.45))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(seam.opacity(self.textFieldFocused ? 0.55 : 0.22), lineWidth: 1)))
+            .padding(.horizontal, 24)
         }
         .padding(28)
         .onAppear {
@@ -84,4 +118,13 @@ struct TalkOrbOverlay: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Talk Mode \(status)")
     }
+
+    private func submitText() {
+        let trimmed = self.textInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        self.textInput = ""
+        self.textFieldFocused = false
+        self.appModel.talkMode.sendTextMessage(trimmed)
+    }
 }
+
