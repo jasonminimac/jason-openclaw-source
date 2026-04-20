@@ -12,6 +12,7 @@ struct TalkOrbOverlay: View {
         let mic = min(max(self.appModel.talkMode.micLevel, 0), 1)
 
         VStack(spacing: 14) {
+            // ── Orb ──────────────────────────────────────────────────────────
             ZStack {
                 Circle()
                     .stroke(seam.opacity(0.26), lineWidth: 2)
@@ -79,7 +80,37 @@ struct TalkOrbOverlay: View {
                     .accessibilityLabel("Microphone level")
             }
 
-            // Text input bar — lets users type instead of (or alongside) speaking
+            // ── Transcript panel ──────────────────────────────────────────────
+            let entries = self.appModel.talkMode.transcriptEntries
+            if !entries.isEmpty {
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(alignment: .leading, spacing: 16) {
+                            ForEach(entries) { entry in
+                                TalkTranscriptEntryView(entry: entry, seam: seam)
+                                    .id(entry.id)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                    .frame(maxHeight: 260)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.black.opacity(0.40))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(seam.opacity(0.18), lineWidth: 1)))
+                    .padding(.horizontal, 24)
+                    .onChange(of: entries.count) { _, _ in
+                        if let last = entries.last {
+                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                        }
+                    }
+                }
+            }
+
+            // ── Text input bar ────────────────────────────────────────────────
             HStack(spacing: 10) {
                 TextField("Type a message…", text: self.$textInput, axis: .vertical)
                     .lineLimit(1...4)
@@ -128,3 +159,64 @@ struct TalkOrbOverlay: View {
     }
 }
 
+// MARK: - Transcript entry view
+
+private struct TalkTranscriptEntryView: View {
+    let entry: TalkTranscriptEntry
+    let seam: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // User utterance
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.white.opacity(0.45))
+                    .padding(.top, 2)
+                Text(self.entry.userText)
+                    .font(.system(.footnote, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.65))
+                    .multilineTextAlignment(.leading)
+            }
+
+            // Assistant response — rendered with native markdown
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(self.seam.opacity(0.70))
+                        .frame(width: 6, height: 6)
+                    Text("Response")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(self.seam.opacity(0.80))
+                }
+                TalkMarkdownText(text: self.entry.assistantText, seam: self.seam)
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.06)))
+        }
+    }
+}
+
+// MARK: - Inline markdown renderer
+
+/// Renders assistant text with SwiftUI's native AttributedString markdown parser.
+/// Handles bold, italic, inline code, and bullets. Tables and complex HTML are shown as plain text.
+private struct TalkMarkdownText: View {
+    let text: String
+    let seam: Color
+
+    var body: some View {
+        let attributed = (try? AttributedString(
+            markdown: self.text,
+            options: AttributedString.MarkdownParsingOptions(
+                allowsExtendedAttributes: true,
+                interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(self.text)
+        Text(attributed)
+            .font(.system(.footnote, design: .rounded))
+            .foregroundStyle(Color.white.opacity(0.90))
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}

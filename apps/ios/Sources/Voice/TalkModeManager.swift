@@ -28,6 +28,15 @@ private final class StreamFailureBox: @unchecked Sendable {
 // It's large, and splitting would force `private` -> `fileprivate` across many members.
 // We'll refactor into smaller files when the surface stabilizes.
 // swiftlint:disable type_body_length file_length
+
+/// A single user→assistant exchange recorded in the Talk overlay transcript.
+struct TalkTranscriptEntry: Identifiable {
+    let id: UUID = UUID()
+    let userText: String
+    let assistantText: String
+    let timestamp: Date
+}
+
 @MainActor
 @Observable
 final class TalkModeManager: NSObject {
@@ -47,6 +56,10 @@ final class TalkModeManager: NSObject {
     var gatewayTalkApiKeyConfigured: Bool = false
     var gatewayTalkDefaultModelId: String?
     var gatewayTalkDefaultVoiceId: String?
+
+    /// Transcript entries shown in the Talk overlay (user prompt + assistant reply).
+    /// Each completed round-trip appends one entry; capped at 20 to avoid memory growth.
+    var transcriptEntries: [TalkTranscriptEntry] = []
 
     private enum CaptureMode {
         case idle
@@ -852,6 +865,16 @@ final class TalkModeManager: NSObject {
             self.logger.info("assistant text ok chars=\(assistantText.count, privacy: .public)")
             GatewayDiagnostics.log("talk: assistant text ok chars=\(assistantText.count)")
             streamingTask?.cancel()
+            // Record this exchange in the visible transcript (cap at 20 entries).
+            // Use the raw transcript for user-facing display (not the full system prompt).
+            let entry = TalkTranscriptEntry(
+                userText: transcript,
+                assistantText: assistantText,
+                timestamp: Date())
+            self.transcriptEntries.append(entry)
+            if self.transcriptEntries.count > 20 {
+                self.transcriptEntries.removeFirst(self.transcriptEntries.count - 20)
+            }
             if shouldIncremental {
                 await self.handleIncrementalAssistantFinal(text: assistantText)
             } else {
